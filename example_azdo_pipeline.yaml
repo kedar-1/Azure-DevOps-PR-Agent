@@ -61,6 +61,7 @@ stages:
         securityThreshold: '80'
         outputFormat: 'junit'
         deploymentName: $(AZURE_OPENAI_DEPLOYMENT_NAME)
+        modelName: $(AZURE_OPENAI_MODEL_NAME)
       env:
         AZURE_DEVOPS_PAT: $(System.AccessToken)
         AZURE_DEVOPS_ORG_URL: $(System.CollectionUri)
@@ -98,7 +99,8 @@ stages:
 # 2. The group should contain:
 #    - AZURE_OPENAI_ENDPOINT: Your Azure OpenAI endpoint URL
 #    - AZURE_OPENAI_API_KEY: Your Azure OpenAI API key
-#    - AZURE_OPENAI_DEPLOYMENT_NAME: Your deployment name (e.g., 'gpt-4')
+#    - AZURE_OPENAI_DEPLOYMENT_NAME: Your deployment name (e.g., 'gpt-4') - Only for Azure OpenAI
+#    - AZURE_OPENAI_MODEL_NAME: Your model ID (e.g., 'Llama-3-70B') - Required for Azure AI Foundry
 #
 # 3. Install the DevOpsPRAgentAnalyze extension from the marketplace
 # 4. Grant appropriate permissions to the Variable Group for this pipeline

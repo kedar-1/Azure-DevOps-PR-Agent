@@ -67,9 +67,9 @@
     {
       "name": "apiEndpoint",
       "type": "string",
-      "label": "Azure OpenAI Endpoint (Optional)",
+      "label": "API Endpoint (Optional)",
       "required": false,
-      "helpMarkDown": "Azure OpenAI endpoint URL. Can also be set via AZURE_OPENAI_ENDPOINT environment variable. Example: https://your-openai.openai.azure.com/",
+      "helpMarkDown": "The API endpoint URL. For Azure OpenAI: https://your-resource.openai.azure.com/. For Azure AI Foundry (Serverless API): https://your-model-endpoint.models.ai.azure.com/. Can also be set via AZURE_OPENAI_ENDPOINT environment variable.",
       "groupName": "apiConfiguration"
     },
     {
@@ -86,7 +86,15 @@
       "label": "Azure OpenAI Deployment Name",
       "defaultValue": "gpt-4.1",
       "required": false,
-      "helpMarkDown": "Name of your Azure OpenAI deployment (e.g., gpt-4.1, gpt-35-turbo). Only needed for Azure OpenAI endpoints.",
+      "helpMarkDown": "Name of your Azure OpenAI deployment (e.g., gpt-4.1, gpt-35-turbo). Only needed for Azure OpenAI endpoints. Use 'modelName' for Azure AI Foundry.",
+      "groupName": "apiConfiguration"
+    },
+    {
+      "name": "modelName",
+      "type": "string",
+      "label": "Model Name / ID (Optional)",
+      "required": false,
+      "helpMarkDown": "The ID of the model to use (e.g., Llama-3-70B, gpt-4o). Required for Azure AI Foundry Serverless API or if you want to override the default model.",
       "groupName": "apiConfiguration"
     },
     {

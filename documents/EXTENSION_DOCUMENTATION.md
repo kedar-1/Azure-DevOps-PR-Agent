@@ -21,6 +21,7 @@ Transform your code review process with intelligent AI analysis that provides co
        AZURE_OPENAI_ENDPOINT: $(openai-endpoint)
        AZURE_OPENAI_API_KEY: $(openai-key)
        AZURE_DEVOPS_PAT: $(System.AccessToken)
+       AZURE_OPENAI_MODEL_NAME: 'gpt-4o' # Optional
    ```
 
 3. **Run Your Pipeline**
@@ -138,7 +139,8 @@ Runs all analysis types and posts separate comments:
 | `securityThreshold` | 80 | Minimum security score (0-100) |
 | `outputFormat` | markdown | Output format (markdown, json, junit) |
 | `publishResults` | false | Publish results to Azure DevOps |
-| `deploymentName` | gpt-4 | Azure OpenAI deployment name |
+| `deploymentName` | gpt-4.1 | Azure OpenAI deployment name |
+| `modelName` | | Model name or ID (Required for Azure AI Foundry) |
 | `apiVersion` | 2024-02-15-preview | Azure OpenAI API version |
 | `timeout` | 300000 | Request timeout in milliseconds |
 
@@ -191,6 +193,7 @@ steps:
     securityThreshold: 90
     publishResults: true
     deploymentName: 'gpt-4-turbo'
+    modelName: 'gpt-4-turbo-2024-04-09'
     timeout: 600000
   env:
     AZURE_OPENAI_ENDPOINT: $(AZURE_OPENAI_ENDPOINT)
@@ -267,6 +270,7 @@ steps:
   inputs:
     analysisType: 'review'
     deploymentName: 'gpt-4-32k'
+    modelName: 'gpt-4-32k-0613'
     apiVersion: '2024-02-15-preview'
     timeout: 900000  # 15 minutes
   env:
@@ -288,7 +292,15 @@ steps:
 1. Go to Azure OpenAI Studio
 2. Navigate to Deployments → Create new deployment
 3. Select GPT-4 or GPT-3.5-turbo model
-4. Note the deployment name (e.g., "gpt-4")
+4. Note the deployment name (e.g., "gpt-4.1")
+
+### 1a. Azure AI Foundry (Serverless API) Setup
+
+If you prefer using models like **Llama-3**, **Mistral**, or **Cohere** via Azure AI Foundry:
+1. Go to Azure AI Foundry → Model Catalog.
+2. Select your desired model and click **Deploy** -> **Serverless API**.
+3. Note the **Target URI** (endpoint) and **API Key**.
+4. Use the model ID (e.g., `Llama-3-70B-Instruct`) in the `modelName` parameter.
 
 **Get API Key:**
 1. Go to Azure OpenAI resource → Keys and Endpoint

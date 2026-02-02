@@ -13,6 +13,7 @@ async function run() {
         const apiEndpoint = tl.getInput('apiEndpoint', false) || process.env.AZURE_OPENAI_ENDPOINT;
         const apiKey = tl.getInput('apiKey', false) || process.env.AZURE_OPENAI_API_KEY;
         const deploymentName = tl.getInput('deploymentName', false) || process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4.1';
+        const modelName = tl.getInput('modelName', false) || process.env.AZURE_OPENAI_MODEL_NAME;
         const apiVersion = tl.getInput('apiVersion', false) || process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
         const prUrl = tl.getInput('prUrl', false) || process.env.PR_URL;
         const sourceDirectory = tl.getPathInput('sourceDirectory', false) || process.cwd();
@@ -48,6 +49,7 @@ async function run() {
         console.log(`📁 Source Directory: ${sourceDirectory}`);
         console.log(`🔗 API Endpoint: ${apiEndpoint}`);
         console.log(`🚀 Deployment Name: ${deploymentName}`);
+        if (modelName) console.log(`🤖 Model Name/ID: ${modelName}`);
         console.log(`📅 API Version: ${apiVersion}`);
 
         if (prInfo.isPR) {
@@ -110,7 +112,8 @@ async function run() {
                 timeout,
                 deploymentName,
                 apiVersion,
-                retryCount
+                retryCount,
+                modelName
             };
 
             analysisResult = await runComprehensiveAnalysis(apiEndpoint, apiKey, filesToAnalyze, options);
@@ -140,7 +143,7 @@ async function run() {
             for (let attempt = 1; attempt <= retryCount; attempt++) {
                 try {
                     console.log(`🔄 Analysis attempt ${attempt}/${retryCount}`);
-                    analysisResult = await performAnalysis(apiEndpoint, apiKey, analysisRequest, timeout, deploymentName, apiVersion);
+                    analysisResult = await performAnalysis(apiEndpoint, apiKey, analysisRequest, timeout, deploymentName, apiVersion, modelName);
                     break; // Success, exit retry loop
                 } catch (error) {
                     lastError = error;
@@ -439,7 +442,7 @@ function shouldIncludeFile(filePath, sourceDir, includePatterns, excludePatterns
     return true; // Include by default if no patterns specified
 }
 
-async function performAnalysis(apiEndpoint, apiKey, request, timeout, deploymentName = 'gpt-4.1', apiVersion = '2024-02-15-preview') {
+async function performAnalysis(apiEndpoint, apiKey, request, timeout, deploymentName = 'gpt-4.1', apiVersion = '2024-02-15-preview', modelName = null) {
     return new Promise((resolve, reject) => {
         // Check if this is an Azure OpenAI endpoint
         const isAzureOpenAI = apiEndpoint.includes('openai.azure.com');
@@ -449,6 +452,7 @@ async function performAnalysis(apiEndpoint, apiKey, request, timeout, deployment
         if (isAzureOpenAI) {
             // Azure OpenAI format
             console.log(`🚀 Using Azure OpenAI deployment: ${deploymentName}`);
+            if (modelName) console.log(`🤖 Overriding/Specifying model: ${modelName}`);
             console.log(`📅 Using API version: ${apiVersion}`);
             url = new URL(`/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`, apiEndpoint);
 
@@ -456,6 +460,7 @@ async function performAnalysis(apiEndpoint, apiKey, request, timeout, deployment
             const prompt = createAnalysisPrompt(request);
 
             postData = JSON.stringify({
+                model: modelName || undefined,
                 messages: [
                     {
                         role: "system",
@@ -474,6 +479,44 @@ async function performAnalysis(apiEndpoint, apiKey, request, timeout, deployment
                 hostname: url.hostname,
                 port: url.port || 443,
                 path: url.pathname + url.search,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData),
+                    'api-key': apiKey,
+                    'User-Agent': 'Azure-DevOps-PR-Agent/1.0.0'
+                }
+            };
+        } else if (apiEndpoint.includes('.models.ai.azure.com') || apiEndpoint.includes('.ml.azure.com')) {
+            // Azure AI Foundry Serverless API format
+            console.log(`🚀 Using Azure AI Foundry Serverless API`);
+            if (modelName) console.log(`🤖 Using model: ${modelName}`);
+
+            url = new URL('/v1/chat/completions', apiEndpoint);
+
+            // Create a prompt for code analysis
+            const prompt = createAnalysisPrompt(request);
+
+            postData = JSON.stringify({
+                model: modelName || "gpt-4", // AI Foundry Serverless requires model
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are an expert code reviewer. Analyze the provided code and return a JSON response with quality scores, security assessment, and suggestions."
+                    },
+                    {
+                        role: "user",
+                        content: prompt
+                    }
+                ],
+                max_tokens: 4000,
+                temperature: 0.1
+            });
+
+            options = {
+                hostname: url.hostname,
+                port: url.port || 443,
+                path: url.pathname,
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -506,7 +549,7 @@ async function performAnalysis(apiEndpoint, apiKey, request, timeout, deployment
 
         console.log(`🔗 Making request to: ${url.toString()}`);
         console.log(`📤 Request method: ${options.method}`);
-        console.log(`🔑 Using ${isAzureOpenAI ? 'Azure OpenAI' : 'PR Agent'} API format`);
+        console.log(`🔑 Using API format: ${isAzureOpenAI ? 'Azure OpenAI' : (apiEndpoint.includes('models.ai.azure.com') ? 'Azure AI Foundry' : 'PR Agent')}`);
 
         const req = client.request(options, (res) => {
             let data = '';
@@ -523,8 +566,8 @@ async function performAnalysis(apiEndpoint, apiKey, request, timeout, deployment
                     if (res.statusCode >= 200 && res.statusCode < 300) {
                         let result = JSON.parse(data);
 
-                        // Handle Azure OpenAI response format
-                        if (isAzureOpenAI && result.choices && result.choices[0]) {
+                        // Handle Azure OpenAI / AI Foundry response format
+                        if ((isAzureOpenAI || apiEndpoint.includes('models.ai.azure.com') || apiEndpoint.includes('ml.azure.com')) && result.choices && result.choices[0]) {
                             const content = result.choices[0].message.content;
                             try {
                                 // Try to parse the AI response as JSON
@@ -1353,7 +1396,8 @@ async function runComprehensiveAnalysis(apiEndpoint, apiKey, files, options) {
                 analysisRequest,
                 options.timeout || 600000, // Default 10 minutes
                 options.deploymentName || 'gpt-4.1',
-                options.apiVersion || '2024-02-15-preview'
+                options.apiVersion || '2024-02-15-preview',
+                options.modelName
             );
 
             // Store individual analysis result with proper type
@@ -1441,7 +1485,8 @@ async function runComprehensiveAnalysis(apiEndpoint, apiKey, files, options) {
             labelsRequest,
             options.timeout || 600000,
             options.deploymentName || 'gpt-4.1',
-            options.apiVersion || '2024-02-15-preview'
+            options.apiVersion || '2024-02-15-preview',
+            options.modelName
         );
 
         labelsResult.analysisType = 'labels';

@@ -1,6 +1,6 @@
 # Azure DevOps PR Agent
 
-🤖 **AI-powered code analysis and review for Azure DevOps pull requests**
+🤖 **AI-powered code analysis and review for Azure DevOps pull requests (Azure OpenAI & Azure AI Foundry)**
 
 Transform your code review process with intelligent AI analysis that provides comprehensive feedback on code quality, security, performance, and best practices.
 
@@ -32,6 +32,8 @@ Install this extension to your Azure DevOps organization.
     AZURE_OPENAI_ENDPOINT: $(AZURE_OPENAI_ENDPOINT)
     AZURE_OPENAI_API_KEY: $(AZURE_OPENAI_API_KEY)
     AZURE_DEVOPS_PAT: $(System.AccessToken)
+    # Optional for Azure AI Foundry
+    AZURE_OPENAI_MODEL_NAME: 'Llama-3-70B-Instruct'
 ```
 
 ### Step 3: Run Your Pipeline

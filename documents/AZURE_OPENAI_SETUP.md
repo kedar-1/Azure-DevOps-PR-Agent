@@ -17,6 +17,9 @@ variables:
   
   # Your Azure OpenAI API key (mark as secret!)
   AZURE_OPENAI_API_KEY: 'your-azure-openai-api-key'
+
+  # Your Custom Model ID (Required for Azure AI Foundry / Serverless API)
+  AZURE_OPENAI_MODEL_NAME: 'Llama-3-70B-Instruct'
 ```
 
 ### **Step 2: Update Your Pipeline**
@@ -33,11 +36,19 @@ variables:
     securityThreshold: 90
     outputFormat: 'junit'
     publishResults: true
+    modelName: '$(AZURE_OPENAI_MODEL_NAME)'
 ```
 
 ### **Step 3: Ensure GPT-4 Deployment**
 
-The task assumes you have a GPT-4 deployment named `gpt-4`. If your deployment has a different name, you'll need to update the endpoint in the task code or create a deployment named `gpt-4`.
+The task assumes you have a GPT-4 deployment named `gpt-4.1`. If your deployment has a different name, you can specify it using the `deploymentName` input.
+
+### **Step 4: Azure AI Foundry (Serverless API)**
+
+If you are using a model from **Azure AI Foundry (Serverless API)**:
+1. Use the model endpoint as `apiEndpoint` (e.g., `https://Llama-3-70B-Instruct-abc.models.ai.azure.com/`).
+2. Provide the model's API key as `apiKey`.
+3. Specify the model ID using the `modelName` input (e.g., `Llama-3-70B-Instruct`).
 
 ## 📋 **Supported Analysis Types**
 

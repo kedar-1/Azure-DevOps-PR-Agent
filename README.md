@@ -21,7 +21,7 @@
 
 ## 🚀 What is this?
 
-This Azure DevOps extension provides AI-powered code review and analysis for your pull requests. It uses Azure OpenAI to automatically analyze code changes and provide actionable feedback directly in your PRs.
+This Azure DevOps extension provides AI-powered code review and analysis for your pull requests. It supports Azure OpenAI and Azure AI Foundry (Serverless API) to automatically analyze code changes and provide actionable feedback directly in your PRs.
 
 ## ✨ Features
 
@@ -53,6 +53,8 @@ Install from the [Azure DevOps Marketplace](https://marketplace.visualstudio.com
     AZURE_OPENAI_ENDPOINT: $(AZURE_OPENAI_ENDPOINT)
     AZURE_OPENAI_API_KEY: $(AZURE_OPENAI_API_KEY)
     AZURE_DEVOPS_PAT: $(System.AccessToken)
+    # Optional for Azure AI Foundry
+    AZURE_OPENAI_MODEL_NAME: 'Llama-3-70B-Instruct'
 ```
 
 ### Analysis Types
